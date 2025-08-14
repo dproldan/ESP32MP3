@@ -74,7 +74,7 @@ int32_t BluetoothManager::audioDataCallback(uint8_t* data, int32_t len) {
     int32_t result = audio_processor.readAudioData(data, len);
     
     // If no more data, the track is finished
-    if (result == 0 && !audio_processor.hasDataAvailable()) {
+    if (result == 0) {
         Serial.println("Track finished, moving to next...");
         if (instance->music_player) {
             instance->music_player->notifyTrackFinished();
@@ -83,15 +83,6 @@ int32_t BluetoothManager::audioDataCallback(uint8_t* data, int32_t len) {
         memset(data, 0, len);
         return len;
     }
-    
-    // If we've read less data than required, fill the rest with silence
-    if (result < len) {
-        memset(data + result, 0, len - result);
-        result = len;
-    }
-    
-    // Feed the watchdog
-    delay(1);
     
     return result;
 }
@@ -120,12 +111,6 @@ void BluetoothManager::connectionStateCallback(esp_a2d_connection_state_t state,
             instance->is_connected = true;
             if (instance->music_player) {
                 instance->music_player->notifyConnectionStateChanged(true);
-                
-                // Auto-start the first track if available
-                if (instance->music_player->getTrackCount() > 0 && 
-                    instance->music_player->getCurrentTrackIndex() == -1) {
-                    instance->music_player->executeCommand(PlayerCommand::PLAY_TRACK, 0);
-                }
             }
             break;
             
@@ -177,7 +162,7 @@ void BluetoothManager::avrcCommandCallback(uint8_t key, bool isReleased) {
             instance->music_player->executeCommand(PlayerCommand::VOLUME_DOWN);
             break;
             
-        default:
+default:
             Serial.printf("Unknown: 0x%02X\n", key);
             break;
     }
