@@ -8,7 +8,8 @@ extern AudioProcessor audio_processor;
 
 MusicPlayer::MusicPlayer() : 
     current_state(PlayerState::STOPPED),
-    current_track_index(-1) {
+    current_track_index(-1),
+    is_busy(false) {
 }
 
 void MusicPlayer::addStateChangeCallback(StateChangeCallback callback) {
@@ -20,6 +21,8 @@ void MusicPlayer::addLogCallback(LogCallback callback) {
 }
 
 bool MusicPlayer::executeCommand(PlayerCommand cmd, int parameter) {
+    if (is_busy) return false; // Don't accept commands while busy
+
     switch (cmd) {
         case PlayerCommand::PLAY:
             if (current_state == PlayerState::PAUSED) {
@@ -87,13 +90,17 @@ void MusicPlayer::prevTrack() {
 }
 
 bool MusicPlayer::openTrack(int index) {
+    setBusy(true);
+
     if (!playlist_manager.isValidIndex(index)) {
+        setBusy(false);
         return false;
     }
     
     String track_path = playlist_manager.getTrackPath(index);
     if (!audio_processor.openFile(track_path)) {
         logMessage("Failed to open: " + track_path);
+        setBusy(false);
         return false;
     }
     
@@ -103,6 +110,7 @@ bool MusicPlayer::openTrack(int index) {
     logMessage("Playing: " + playlist_manager.getTrackName(index));
     notifyStateChange();
     
+    setBusy(false);
     return true;
 }
 
@@ -120,6 +128,7 @@ void MusicPlayer::logMessage(const String& message) {
 }
 
 void MusicPlayer::notifyTrackFinished() {
+    if (is_busy) return;
     logMessage("Track finished");
     nextTrack();
 }
@@ -127,13 +136,11 @@ void MusicPlayer::notifyTrackFinished() {
 void MusicPlayer::notifyConnectionStateChanged(bool connected) {
     if (connected) {
         logMessage("Bluetooth connected");
-        // Auto-start the first track if available and if we're not already playing one
         if (playlist_manager.getTrackCount() > 0 && current_track_index == -1) {
             openTrack(0);
         }
     } else {
         logMessage("Bluetooth disconnected");
-        // Stop playback when disconnected
         current_state = PlayerState::STOPPED;
         notifyStateChange();
     }

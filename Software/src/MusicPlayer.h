@@ -31,6 +31,7 @@ private:
     int current_track_index;
     std::vector<StateChangeCallback> state_callbacks;
     std::vector<LogCallback> log_callbacks;
+    volatile bool is_busy; // Concurrency flag
     
 public:
     MusicPlayer();
@@ -47,12 +48,14 @@ public:
     int getCurrentTrackIndex() const { return current_track_index; }
     int getTrackCount() const;
     String getCurrentTrackName() const;
+    bool isBusy() const { return is_busy; }
     
     // For internal use (calls from A2DP callbacks)
     void notifyTrackFinished();
     void notifyConnectionStateChanged(bool connected);
     
 private:
+    void setBusy(bool busy_state) { is_busy = busy_state; }
     void notifyStateChange();
     void logMessage(const String& message);
     bool openTrack(int index);

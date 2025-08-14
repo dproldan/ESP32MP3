@@ -27,13 +27,11 @@ bool BluetoothManager::initialize(const String& local_name) {
     
     Serial.println("Initializing Bluetooth A2DP...");
     
-    // Configure A2DP Source
     a2dp_source.set_local_name(local_name.c_str());
     a2dp_source.set_data_callback(audioDataCallback);
     a2dp_source.set_on_connection_state_changed(connectionStateCallback);
     a2dp_source.set_avrc_passthru_command_callback(avrcCommandCallback);
     
-    // Start in discoverable mode
     a2dp_source.start();
     
     Serial.println("Bluetooth initialized - discoverable mode active");
@@ -43,7 +41,7 @@ bool BluetoothManager::initialize(const String& local_name) {
 bool BluetoothManager::connect() {
     Serial.printf("Connecting to: %s\n", target_device.c_str());
     a2dp_source.start(target_device.c_str());
-    return true; // Assume success, actual status viene dal callback
+    return true;
 }
 
 void BluetoothManager::disconnect() {
@@ -55,31 +53,30 @@ void BluetoothManager::disconnect() {
     }
 }
 
-// Static callback for audio data
 int32_t BluetoothManager::audioDataCallback(uint8_t* data, int32_t len) {
     if (!instance || !instance->music_player) {
         memset(data, 0, len);
         return len;
     }
     
-    // Check the player status
+    if (instance->music_player->isBusy()) {
+        memset(data, 0, len);
+        return len;
+    }
+
     PlayerState state = instance->music_player->getState();
     if (state == PlayerState::STOPPED || state == PlayerState::PAUSED) {
-        // Restituisci silenzio se in pausa o fermato
         memset(data, 0, len);
         return len;
     }
     
-    // Read audio data from the processor
     int32_t result = audio_processor.readAudioData(data, len);
     
-    // If no more data, the track is finished
     if (result == 0) {
         Serial.println("Track finished, moving to next...");
         if (instance->music_player) {
             instance->music_player->notifyTrackFinished();
         }
-        // Return silence for this buffer
         memset(data, 0, len);
         return len;
     }
@@ -87,7 +84,6 @@ int32_t BluetoothManager::audioDataCallback(uint8_t* data, int32_t len) {
     return result;
 }
 
-// Static callback for connection status
 void BluetoothManager::connectionStateCallback(esp_a2d_connection_state_t state, void* ptr) {
     if (!instance) return;
     
@@ -120,9 +116,8 @@ void BluetoothManager::connectionStateCallback(esp_a2d_connection_state_t state,
     }
 }
 
-// Static callback for AVRC commands
 void BluetoothManager::avrcCommandCallback(uint8_t key, bool isReleased) {
-    if (!instance || !instance->music_player || !isReleased) return;
+    if (!instance || !instance->music_player || !isReleased || instance->music_player->isBusy()) return;
     
     Serial.print("AVRC Command: ");
     
@@ -162,7 +157,7 @@ void BluetoothManager::avrcCommandCallback(uint8_t key, bool isReleased) {
             instance->music_player->executeCommand(PlayerCommand::VOLUME_DOWN);
             break;
             
-default:
+        default:
             Serial.printf("Unknown: 0x%02X\n", key);
             break;
     }
