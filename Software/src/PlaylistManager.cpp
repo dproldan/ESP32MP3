@@ -1,4 +1,3 @@
-// PlaylistManager.cpp
 #include "PlaylistManager.h"
 #include <algorithm>
 

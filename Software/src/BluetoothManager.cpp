@@ -41,19 +41,22 @@ bool BluetoothManager::initialize(const String& local_name) {
 bool BluetoothManager::connect() {
     Serial.printf("Connecting to: %s\n", target_device.c_str());
     a2dp_source.start(target_device.c_str());
+    a2dp_source.set_connected(true);
+    is_connected = true;
     return true;
 }
 
 void BluetoothManager::disconnect() {
     Serial.println("Disconnecting...");
-    a2dp_source.disconnect();
     is_connected = false;
-    if (music_player) {
-        music_player->notifyConnectionStateChanged(false);
-    }
+    a2dp_source.set_connected(false);
 }
 
 int32_t BluetoothManager::audioDataCallback(uint8_t* data, int32_t len) {
+    if (!data || len <= 0) {
+        return 0;
+    }
+
     if (!instance || !instance->music_player) {
         memset(data, 0, len);
         return len;

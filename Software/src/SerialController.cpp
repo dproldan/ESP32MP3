@@ -1,4 +1,3 @@
-// SerialController.cpp
 #include "SerialController.h"
 
 SerialController::SerialController() :

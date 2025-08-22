@@ -138,6 +138,9 @@ void MusicPlayer::notifyConnectionStateChanged(bool connected) {
         logMessage("Bluetooth connected");
         if (playlist_manager.getTrackCount() > 0 && current_track_index == -1) {
             openTrack(0);
+        }else{
+            current_state = PlayerState::PLAYING;
+            notifyStateChange();
         }
     } else {
         logMessage("Bluetooth disconnected");
