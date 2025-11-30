@@ -11,6 +11,9 @@
 // --- Configuration ---
 const char* TARGET_DEVICE_NAME = "Lenovo LP40";
 const int SD_CS_PIN = 5;
+const int SPI_MOSI = 23;
+const int SPI_MISO = 19;
+const int SPI_SCK = 18;
 const char* MUSIC_ROOT = "/";
 
 // --- Global Objects ---
@@ -28,6 +31,8 @@ void setup() {
     
     // Initialize SD card
     Serial.println("Initializing SD card...");
+    SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+    SPI.setDataMode(SPI_MODE0);
     if (!SD.begin(SD_CS_PIN)) {
         Serial.println("SD card initialization failed!");
         return;
