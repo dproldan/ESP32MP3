@@ -52,6 +52,11 @@ void BluetoothManager::disconnect() {
     a2dp_source.set_connected(false);
 }
 
+bool BluetoothManager::VolumeSet(int vol) {
+    a2dp_source.set_volume(vol);
+    return true;
+}
+
 int32_t BluetoothManager::audioDataCallback(uint8_t* data, int32_t len) {
     if (!data || len <= 0) {
         return 0;
