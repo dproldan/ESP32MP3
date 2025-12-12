@@ -1,5 +1,8 @@
 #include "SerialController.h"
 
+int ActualVolume = 70;
+int PausedVolume = 70;
+
 SerialController::SerialController() :
     music_player(nullptr),
     playlist_manager(nullptr),
@@ -68,11 +71,30 @@ void SerialController::executeCommand(char cmd) {
             if (music_player) {
                 PlayerState current_state = music_player->getState();
                 if (current_state == PlayerState::PLAYING) {
+                    if (bluetooth_manager) {
+                        PausedVolume = ActualVolume;
+                        while (ActualVolume > 10)
+                        {   delay(75);
+                            ActualVolume = ActualVolume - 5;
+                            bluetooth_manager->VolumeSet(ActualVolume);
+                        }
                     music_player->executeCommand(PlayerCommand::PAUSE);
+                    ActualVolume = PausedVolume;
+                    bluetooth_manager->VolumeSet(ActualVolume);
+
+                    }
                 } else {
                     music_player->executeCommand(PlayerCommand::PLAY);
+                        if (bluetooth_manager) {
+                            ActualVolume = 0;
+                        while (ActualVolume < PausedVolume)
+                        {    delay(50);
+                            ActualVolume = ActualVolume + 5;
+                            bluetooth_manager->VolumeSet(ActualVolume);
+                        }
                 }
             }
+        }
             break;
             
         case 'n':
@@ -116,14 +138,27 @@ void SerialController::executeCommand(char cmd) {
         case '+':
             if (music_player) {
                 music_player->executeCommand(PlayerCommand::VOLUME_UP);
-                Serial.println("Volume up"); // Placeholder
+            if (bluetooth_manager) {
+                if (ActualVolume < 120)
+                {ActualVolume = ActualVolume + 10;
+                bluetooth_manager->VolumeSet(ActualVolume);
+                }
+                } 
+                Serial.println(ActualVolume);
             }
             break;
             
         case '-':
             if (music_player) {
                 music_player->executeCommand(PlayerCommand::VOLUME_DOWN);
-                Serial.println("Volume down"); // Placeholder
+            if (bluetooth_manager) {
+                if (ActualVolume > 40)
+                {ActualVolume = ActualVolume - 10;
+                bluetooth_manager->VolumeSet(ActualVolume);
+                }
+                }
+                Serial.println(ActualVolume);
+
             }
             break;
             
