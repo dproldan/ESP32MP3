@@ -22,6 +22,7 @@ public:
     // Connection
     bool connect();
     void disconnect();
+    bool VolumeSet(int vol);
     bool isConnected() const { return is_connected; }
     
     // Static callbacks for A2DP
